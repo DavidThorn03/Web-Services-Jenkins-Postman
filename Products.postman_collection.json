@@ -1,0 +1,439 @@
+{
+  "info": {
+    "_postman_id": "bb6d3dde-4395-455a-b310-4f3d3d3abdb9",
+    "name": "Products",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53534370",
+    "_collection_link": "https://go.postman.co/collection/53534370-bb6d3dde-4395-455a-b310-4f3d3d3abdb9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "GetAll",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              "pm.test(\"Returns array\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    pm.expect(body).to.be.an(\"array\");\r",
+              "});\r",
+              "pm.test(\"Items have required fields\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    if (body.length > 0) {\r",
+              "        pm.expect(body[0]).to.have.all.keys(\"ProductID\",\"Name\",\"UnitPrice\",\"StockQuantity\",\"Description\");\r",
+              "    }\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/getAll",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "getAll"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GetSingle",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              "pm.test(\"Correct product returned\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    pm.expect(body.ProductID).to.eql(pm.collectionVariables.get(\"testProductId\"));\r",
+              "    pm.expect(body.Name).to.be.a(\"string\");\r",
+              "    pm.expect(body.UnitPrice).to.be.a(\"number\");\r",
+              "    pm.expect(body.StockQuantity).to.be.a(\"number\");\r",
+              "    pm.expect(body.Description).to.be.a(\"string\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/getSingleProduct?id={{testProductId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "getSingleProduct"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{testProductId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "AddNew",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));\r",
+              "pm.test(\"Returns created product\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    pm.expect(body.ProductID).to.eql(9999);\r",
+              "    pm.expect(body.Name).to.eql(\"Test Product\");\r",
+              "    pm.expect(body.UnitPrice).to.eql(19.99);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"ProductID\": 9999,\r\n  \"Name\": \"Test Product\",\r\n  \"UnitPrice\": 19.99,\r\n  \"StockQuantity\": 50,\r\n  \"Description\": \"A test item\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/addNew",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "addNew"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "CheckAdded",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/getSingleProduct?id={{newId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "getSingleProduct"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{newId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "StartsWith",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              "pm.test(\"All names start with T (case-insensitive)\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    body.forEach(item => {\r",
+              "        pm.expect(item.Name[0].toLowerCase()).to.eql(\"t\");\r",
+              "    });\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/startsWith?letter=T",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "startsWith"
+          ],
+          "query": [
+            {
+              "key": "letter",
+              "value": "T"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Paginate",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              "pm.test(\"Returns max 10 items\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    pm.expect(body).to.be.an(\"array\");\r",
+              "    pm.expect(body.length).to.be.at.most(10);\r",
+              "});\r",
+              "pm.test(\"IDs are within range\", () => {\r",
+              "    pm.response.json().forEach(item => {\r",
+              "        pm.expect(item.ProductID).to.be.within(1001, 1050);\r",
+              "    });\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/paginate?start_id=1001&end_id=1050",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "paginate"
+          ],
+          "query": [
+            {
+              "key": "start_id",
+              "value": "1001"
+            },
+            {
+              "key": "end_id",
+              "value": "1050"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Convert",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+              "pm.test(\"Contains EUR conversion fields\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    pm.expect(body).to.have.all.keys(\"ProductID\",\"Name\",\"price_usd\",\"price_eur\",\"exchange_rate\",\"rate_date\");\r",
+              "    pm.expect(body.price_eur).to.be.a(\"number\");\r",
+              "    pm.expect(body.exchange_rate).to.be.a(\"number\");\r",
+              "    pm.expect(body.exchange_rate).to.be.above(0);\r",
+              "});\r",
+              "pm.test(\"EUR price is calculated correctly\", () => {\r",
+              "    const body = pm.response.json();\r",
+              "    const expected = Math.round(body.price_usd * body.exchange_rate * 100) / 100;\r",
+              "    pm.expect(body.price_eur).to.be.closeTo(expected, 0.01);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/convert?id={{testProductId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "convert"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{testProductId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/deleteOne?id={{newId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "deleteOne"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{newId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "CheckRemoved",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/getSingleProduct?id={{newId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "getSingleProduct"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{newId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "testProductId",
+      "value": 1001
+    },
+    {
+      "key": "newId",
+      "value": 9999
+    }
+  ]
+}

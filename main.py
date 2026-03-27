@@ -51,10 +51,13 @@ class ConvertResponse(BaseModel):
     exchange_rate: float
     rate_date: str
 
+
 # /getSingleProduct - This allows you to pass a single ID number into the endpoint and return the details of the single product in JSON format.
 @app.get("/getSingleProduct", response_model=ItemResponse)
 async def get_single_product(id: int):
     item = await app.db[COLLECTION].find_one({"_id": id})
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Product with ID {id} not found")
     return item_to_dict(item)
 
 
@@ -62,22 +65,23 @@ async def get_single_product(id: int):
 @app.get("/getAll", response_model=list[ItemResponse])
 async def get_all():
     items = app.db[COLLECTION].find()
-    return [item_to_dict(item) async for item in items]
-
+    results = [item_to_dict(item) async for item in items]
+    if not results:
+        raise HTTPException(status_code=404, detail="No products found in the database")
+    return results
 
 # /addNew - This endpoint should take in all 5 attributes of a new item and insert them into the database as a new record.
 @app.post("/addNew", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def add_new(item: ItemCreate):
     existing = await app.db[COLLECTION].find_one({"_id": item.ProductID})
     if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Product with ID {item.ProductID} already exists"
-        )
+        raise HTTPException(status_code=409, detail=f"Product with ID {item.ProductID} already exists")
     item = item.model_dump()
     item["_id"] = item.pop("ProductID")
     await app.db[COLLECTION].insert_one(item)
     created = await app.db[COLLECTION].find_one({"_id": item["_id"]})
+    if created is None:
+        raise HTTPException(status_code=500, detail="Product was not created successfully")
     return item_to_dict(created)
 
 
@@ -85,21 +89,29 @@ async def add_new(item: ItemCreate):
 @app.delete("/deleteOne", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_one(id: int):
     result = await app.db[COLLECTION].delete_one({"_id": id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail=f"Product with ID {id} not found")
 
 
 # /startsWith - This should allow the user to pass a letter to the URL, such as s, and return all products that start with s.
 @app.get("/startsWith", response_model=list[ItemResponse])
 async def starts_with(letter: str):
+    if len(letter) != 1 or not letter.isalpha():
+        raise HTTPException(status_code=400, detail="Parameter must be a single alphabetic letter")
     items = app.db[COLLECTION].find(
         {"Name": {"$regex": f"^{letter}", "$options": "i"}}
     )
     results = [item_to_dict(item) async for item in items]
+    if not results:
+        raise HTTPException(status_code=404, detail=f"No products found starting with '{letter}'")
     return results
 
 
 # /paginate - This URL should pass in a product ID to start from and a product ID to end from. The products should be returned in a batch of 10.
 @app.get("/paginate", response_model=list[ItemResponse])
 async def paginate(start_id: int, end_id: int):
+    if start_id > end_id:
+        raise HTTPException(status_code=400, detail="start_id must be less than or equal to end_id")
     items = (
         app.db[COLLECTION]
         .find({"_id": {"$gte": start_id, "$lte": end_id}})
@@ -107,12 +119,16 @@ async def paginate(start_id: int, end_id: int):
         .limit(10)
     )
     results = [item_to_dict(item) async for item in items]
+    if not results:
+        raise HTTPException(status_code=404, detail=f"No products found between ID {start_id} and {end_id}")
     return results
 
 # /convert - All of the prices are currently in dollars in the sample data. Implement a URL titled /convert which takes in the ID number of a product and returns the price in euros. An online API should be used to get the current exchange rate.
 @app.get("/convert", response_model=ConvertResponse)
 async def convert(id: int):
     item = await app.db[COLLECTION].find_one({"_id": id})
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Product with ID {id} not found")
 
     async with httpx.AsyncClient() as client:
         try:
@@ -123,13 +139,13 @@ async def convert(id: int):
             )
             fx_response.raise_for_status()
         except httpx.HTTPError:
-            raise HTTPException(
-                status_code=503,
-                detail="Could not reach exchange rate API. Try again later."
-            )
+            raise HTTPException(status_code=503, detail="Could not reach exchange rate API. Try again later.")
 
     fx_data = fx_response.json()
-    eur_rate = fx_data["rates"]["EUR"]
+    eur_rate = fx_data["rates"].get("EUR")
+    if eur_rate is None:
+        raise HTTPException(status_code=502, detail="Exchange rate data is missing EUR rate")
+
     rate_date = fx_data["date"]
     price_usd = item["UnitPrice"]
     price_eur = round(price_usd * eur_rate, 2)
